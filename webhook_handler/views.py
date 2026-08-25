@@ -165,7 +165,7 @@ def lista(grupo_id):
         texto_resposta = "A lista do baba está vazia."
     else:
         texto_resposta = (
-            f"Lista do {baba_atual.nome} ás {baba_atual.hora_inicio.strftime('%H:%M')} de {baba_atual.data.strftime('%A').title()}:\n")  # type: ignore
+            f"Lista do {baba_atual.nome} ás {baba_atual.hora_inicio.strftime('%H:%M')} de {baba_atual.dia.strftime('%A').title()}:\n")  # type: ignore
         texto_resposta += f"\nJogadores:\n"
         for i in range(len(linha)):
             texto_resposta += f"{i+1}. {linha[i].nome}\n"
