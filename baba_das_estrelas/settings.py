@@ -32,11 +32,7 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1',
-                 '192.168.31.196', '192.168.31.210',
-                 '192.168.0.121', '172.16.133.40', '172.16.133.40', '192.168.0.106',]
-
-
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 # Application definition
 
 INSTALLED_APPS = [
