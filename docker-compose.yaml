@@ -5,7 +5,7 @@ services:
     networks:
       - evolution-net
     command: [ "postgres", "-c", "max_connections=1000" ]
-    restart: always
+    restart: unless-stopped
     ports:
       - 5432:5432
     environment:
@@ -19,6 +19,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4:latest
+    restart: unless-stopped
     networks:
       - evolution-net
     environment:
@@ -33,6 +34,7 @@ services:
 
   redis:
     image: redis:latest
+    restart: unless-stopped
     container_name: redis
     networks:
       - evolution-net
@@ -46,7 +48,7 @@ services:
   evolution-api:
     container_name: evolution_api
     image: evoapicloud/evolution-api:latest
-    restart: always
+    restart: unless-stopped
     networks:
       - evolution-net
     ports:
