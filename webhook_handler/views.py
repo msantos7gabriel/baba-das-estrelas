@@ -332,6 +332,9 @@ def passarin(grupo_id):
 def andrey(grupo_id):
     return requisicao_post('*Andrey* melhor chupetinha da Bahia 😋😋🤤🤤', grupo_id)
 
+def lucas(grupo_id):
+    return requisicao_post('Rodelinha🍩 de *OURO* 🤤', grupo_id)
+
 
 def comandos(nome, mensagem, id_whatsapp, grupo_id):
     if cache.get(id_whatsapp):
@@ -344,7 +347,7 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
     commandos_validos = ['!liberar', '!liberar-lista', '!fechar', '!fecha-lista',
                          '!ping', '!info', '!ajuda', '!menu', '!perfil', '!rank', '!lista', '!participar', '!entrar', '!sair',
                          '!cadastrar', '!cadastro', '!cancelar',
-                         '!entrar-em-biel', '!sadu-ou-don', '!luklima', '!thiago', '!rato', '!hugo', '!passaro', '!andrey', '!don', '!sadu']
+                         '!entrar-em-biel', '!sadu-ou-don', '!luklima', '!thiago', '!rato', '!hugo', '!passaro', '!andrey', '!don', '!sadu', '!lucas']
 
     # Formatação da mensagem para evitar problemas com maiúsculas/minúsculas e espaços
     mensagem_formatada = mensagem.lower().strip()
@@ -394,6 +397,8 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
             passarin(grupo_id)
         elif mensagem_formatada == '!andrey':
             andrey(grupo_id)
+        elif mensagem_formatada == '!lucas':
+            lucas(grupo_id)
     else:
         # Verificar se o user esta em uma etapa de cadastro
         for etapa in etapas:
