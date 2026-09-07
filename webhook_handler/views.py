@@ -1,4 +1,8 @@
+# Importações Extras
 import json
+from os import environ
+
+# Importações Django
 from .requisições import requisicao_post
 from django.http import JsonResponse
 from django.core.cache import cache
@@ -25,30 +29,77 @@ except locale.Error:
 # Funcionalidade para o adm poder soltar a lista
 @cadastro_required
 @admin_required
-def liberarLista(id_whatsapp, grupo_id):
+def liberarLista(id_whatsapp, mensagem='', grupo_id=None):
     if Baba.objects.filter(is_active=True).count() > 0:
         texto_resposta = f'Já exite um baba aberto'
         return requisicao_post(texto_resposta, grupo_id)
     else:
+        for etapa in etapas:
+            if etapa[0] == id_whatsapp and etapa[1] == "liberarlista" and etapa[2] == 1:
+                # Verifica se a mensa é válida (não nulo e não vazio)
+                if mensagem is None or mensagem.strip() == "":
+                    texto_resposta = "Mensagem inválida. Por favor, tente novamente."
+                    return requisicao_post(texto_resposta, grupo_id)
+
+                try:
+                    Baba.objects.order_by('-data')[int(mensagem)-1]
+                except Exception as e:
+                    texto_resposta = f"Não exite baba com o id '{mensagem}'\nDigite um id valido da lista de babas:"
+                    return requisicao_post(texto_resposta, grupo_id)
+
+                # Caso seja valido remove a etapa do user
+                etapas.remove(etapa)
+                # buscando com base no id do baba que o adm quer liberar
+                baba = Baba.objects.order_by('-data')[int(mensagem)-1]
+                # Atualizando o baba para ativo
+                baba.is_active = True
+                baba.save()
+
+                # Mensagem de resposta para o grupo informando que o baba foi liberado com sucesso
+                texto_resposta = f"Baba '{baba.nome}' liberado com sucesso!"
+                requisicao_post(texto_resposta, grupo_id)
+
+                # Mensagem de aviso para informar que o baba foi liberado
+                jogador = Jogador.objects.get(id_whatsapp=id_whatsapp)
+                texto_resposta = f"O Baba '{baba.nome}' foi liberado pelo ADM {jogador.nome}!"
+                # requisicao_post(texto_resposta, environ.get('CANAL_DE_AVISOS_ID'))
+                requisicao_post(texto_resposta, grupo_id)
+                return
+
+        # Busca todos os babas cadastrados
+        babas = Baba.objects.all().order_by('-data')
+
+        if babas.count() == 0:
+            texto_resposta = f'Não tem nenhum baba cadastrado.\nFale com Gerenciador do Sistema para cadastrar um novo baba'
+            return requisicao_post(texto_resposta, grupo_id)
+
+        # Caso tenha babas cadastrados, mostra a lista de babas para o adm escolher qual liberar
         texto_resposta = f'Lista de Babas: \n\n'
-        babas = Baba.objects.all()
+
         for i in range(len(babas)):
-            texto_resposta += f'[{i}] - {babas[i]}\n'
+            texto_resposta += f'[{i+1}] - {babas[i]}\n'
         texto_resposta += '\n Escolha o baba que deseja liberar:'
+
         # adicionar etapas
+        etapas.append((id_whatsapp, "liberarlista", 1))
         return requisicao_post(texto_resposta, grupo_id)
 
+
 # Funcionalidade para fechar lista
-
-
 @admin_required
 def fecharLista(id_whatsapp, grupo_id):
     jogadores = Jogador.objects.all()
     babas = Baba.objects.filter(is_active=True).all()
-    if babas == None:
+
+    if not babas.exists():
         texto_resposta = f'Não tem nenhum baba aberto'
         return requisicao_post(texto_resposta, grupo_id)
     else:
+        baba_ativo = Baba.objects.filter(is_active=True).first()    
+        texto_resposta = f'o Baba {baba_ativo.nome} foi fechado pelo ADM {Jogador.objects.get(id_whatsapp=id_whatsapp).nome}\n Obrigado pela presença de todos!'
+        requisicao_post(texto_resposta, grupo_id)
+        # requisicao_post(texto_resposta, environ.get('CANAL_DE_AVISOS_ID'))
+
         # Tira todos os babas para não ativos
         for baba in babas:
             baba.is_active = False
@@ -60,9 +111,8 @@ def fecharLista(id_whatsapp, grupo_id):
         texto_resposta = f'Todos os babas ativados os foram fechados, jogadores foram removidos do baba'
         return requisicao_post(texto_resposta, grupo_id)
 
+
 # Teste de vida do Bot
-
-
 def ping(grupo_id):
     texto_resposta = "Tudo funcionando e operacional!"
     return requisicao_post(texto_resposta, grupo_id)
@@ -165,7 +215,6 @@ def lista(grupo_id):
         texto_resposta = "A lista do baba está vazia."
     else:
         texto_resposta = (
-            # type: ignore
             f"Lista do {baba_atual.nome} ás {baba_atual.hora_inicio.strftime('%H:%M')} de {baba_atual.dia.strftime('%A').title()}:\n")
         texto_resposta += f"\nJogadores:\n"
         for i in range(len(linha)):
@@ -366,9 +415,9 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
         elif mensagem_formatada == '!info' or mensagem_formatada == '!menu' or mensagem_formatada == '!ajuda':
             info(grupo_id)
         elif mensagem_formatada == '!liberar-lista' or mensagem_formatada == '!liberar':
-            liberarLista(id_whatsapp, grupo_id)
+            liberarLista(id_whatsapp, grupo_id=grupo_id)
         elif mensagem_formatada == '!fecha-lista' or mensagem_formatada == '!fechar':
-            fecharLista(id_whatsapp, grupo_id)
+            fecharLista(id_whatsapp, grupo_id=grupo_id)
         elif mensagem_formatada == '!perfil':
             perfil(id_whatsapp, grupo_id=grupo_id)
         elif mensagem_formatada == '!lista':
@@ -408,6 +457,8 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
                 cadastrar(id_whatsapp, nome=mensagem, grupo_id=grupo_id)
             elif etapa[0] == id_whatsapp and etapa[1] == "participar":
                 participar(id_whatsapp, mensagem, grupo_id)
+            elif etapa[0] == id_whatsapp and etapa[1] == "liberarlista":
+                liberarLista(id_whatsapp, mensagem, grupo_id)
 
         # Commandos compostos
         if '!perfil' in mensagem_formatada:
