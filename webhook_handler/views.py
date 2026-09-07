@@ -1,6 +1,7 @@
 # Importações Extras
 import json
 from os import environ
+from datetime import datetime, timedelta
 
 # Importações Django
 from .requisições import requisicao_post
@@ -493,11 +494,18 @@ def webhook_evolution(request):
             # Para Verificar o ID do Grupo
             grupo = chaves.get('remoteJid')
 
-            # verifica se é uma mensagem de conversa ou de mídia
+            # para verificar se é uma mensagem de conversa ou de mídia
             tipo_mensagem = dados.get('messageType')
 
-            # Se for uma mensagem nova chegando...
-            if evento == 'messages.upsert' and grupo in allowed_groups and tipo_mensagem == 'conversation':
+            # Para veficar se a mensagem foi enviada a 1 minuto atrás
+            date_time = payload.get('date_time').replace(
+                'T', ' ').replace('Z', '')
+            # Converte a string de data e hora em um objeto datetime
+            date_time = datetime.strptime(date_time, '%Y-%m-%d %H:%M:%S.%f')
+            time_delta = datetime.now() - date_time
+
+            # Se for uma mensagem nova chegando, se esta dento dos grupos permitidos, e se é uma mensagem de texto e se foi enviada a menos de 1 minuto atrás
+            if evento == 'messages.upsert' and grupo in allowed_groups and tipo_mensagem == 'conversation' and timedelta(minutes=1) > time_delta:
                 print("Mensagem atingiu os requisitos")
 
                 # if fromMe:
