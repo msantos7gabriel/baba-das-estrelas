@@ -55,16 +55,15 @@ def liberarLista(id_whatsapp, mensagem='', grupo_id=None):
                 baba.is_active = True
                 baba.save()
 
-                # Mensagem de resposta para o grupo informando que o baba foi liberado com sucesso
-                texto_resposta = f"Baba '{baba.nome}' liberado com sucesso!"
-                requisicao_post(texto_resposta, grupo_id)
-
                 # Mensagem de aviso para informar que o baba foi liberado
                 jogador = Jogador.objects.get(id_whatsapp=id_whatsapp)
                 texto_resposta = f"O Baba '{baba.nome}' foi liberado pelo ADM {jogador.nome}!"
                 # requisicao_post(texto_resposta, environ.get('CANAL_DE_AVISOS_ID'))
                 requisicao_post(texto_resposta, grupo_id)
-                return
+
+                # Mensagem de resposta para o grupo informando que o baba foi liberado com sucesso
+                texto_resposta = f"Baba '{baba.nome}' liberado com sucesso!"
+                return requisicao_post(texto_resposta, grupo_id)
 
         # Busca todos os babas cadastrados
         babas = Baba.objects.all().order_by('-data')
@@ -95,7 +94,7 @@ def fecharLista(id_whatsapp, grupo_id):
         texto_resposta = f'Não tem nenhum baba aberto'
         return requisicao_post(texto_resposta, grupo_id)
     else:
-        baba_ativo = Baba.objects.filter(is_active=True).first()    
+        baba_ativo = Baba.objects.filter(is_active=True).first()
         texto_resposta = f'o Baba {baba_ativo.nome} foi fechado pelo ADM {Jogador.objects.get(id_whatsapp=id_whatsapp).nome}\n Obrigado pela presença de todos!'
         requisicao_post(texto_resposta, grupo_id)
         # requisicao_post(texto_resposta, environ.get('CANAL_DE_AVISOS_ID'))
@@ -105,6 +104,7 @@ def fecharLista(id_whatsapp, grupo_id):
             baba.is_active = False
             baba.save()
         for jogador in jogadores:
+            jogador.jogos += 1
             jogador.baba = None
             jogador.save()
 
@@ -180,7 +180,7 @@ def estrelas(jogador_estrelas):
 def perfil(id_whatsapp,  mensagem=None, grupo_id=None):
     if mensagem == None:
         jogador = Jogador.objects.get(id_whatsapp=id_whatsapp)
-        texto_resposta = f"Nome: {jogador.nome}\nNúmero: {jogador.id_whatsapp}\nEstrelas: {estrelas(jogador.estrelas)}\nPosicação: {jogador.get_posição()}"
+        texto_resposta = f"Nome: {jogador.nome}\nNúmero: {jogador.id_whatsapp}\nEstrelas: {estrelas(jogador.estrelas)}\nPosicação: {jogador.get_posição()}\nQuantidade de partidas: {jogador.jogos}"
         return requisicao_post(texto_resposta, grupo_id)
 
     else:
@@ -340,7 +340,8 @@ def cancelar(id_whatsapp, grupo_id):
 
 
 def rank(grupo_id):
-    jogador = list(Jogador.objects.order_by('-estrelas', 'nome').all())
+    jogador = list(Jogador.objects.order_by(
+        '-estrelas', '-jogos', 'nome').all())
     texto_resposta = "Ranking:"
     for i in range(Jogador.objects.count()):
         texto_resposta += f'\n{i+1} - {jogador[i].nome} - {estrelas(jogador[i].estrelas)}'
@@ -395,7 +396,7 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
         cache.set(id_whatsapp, True, timeout=1)
 
     # Comandos validos que o bot pode responder
-    commandos_validos = ['!liberar', '!liberar-lista', '!fechar', '!fecha-lista',
+    commandos_validos = ['!liberar', '!liberar-lista', '!abrir', '!fechar', '!fecha-lista',
                          '!ping', '!info', '!ajuda', '!menu', '!perfil', '!rank', '!lista', '!participar', '!entrar', '!sair',
                          '!cadastrar', '!cadastro', '!cancelar',
                          '!entrar-em-biel', '!sadu-ou-don', '!luklima', '!thiago', '!rato', '!hugo', '!passaro', '!andrey', '!don', '!sadu', '!lucas']
@@ -414,7 +415,7 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
             ping(grupo_id)
         elif mensagem_formatada == '!info' or mensagem_formatada == '!menu' or mensagem_formatada == '!ajuda':
             info(grupo_id)
-        elif mensagem_formatada == '!liberar-lista' or mensagem_formatada == '!liberar':
+        elif mensagem_formatada == '!liberar-lista' or mensagem_formatada == '!liberar' or mensagem_formatada == '!abrir':
             liberarLista(id_whatsapp, grupo_id=grupo_id)
         elif mensagem_formatada == '!fecha-lista' or mensagem_formatada == '!fechar':
             fecharLista(id_whatsapp, grupo_id=grupo_id)
