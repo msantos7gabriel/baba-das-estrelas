@@ -10,8 +10,8 @@ class Baba(models.Model):
     local = models.CharField(max_length=50, default='Luis Viana')
     descrição = models.CharField(
         max_length=200, default='Baba na quadra do Luis Viana das 7 as 11 e 30')
-    
-    # Dia que o baba começa 
+
+    # Dia que o baba começa
     dia = models.DateField(default=timezone.now, blank=True, null=True)
 
     # Data de Criação do Baba
@@ -23,6 +23,7 @@ class Baba(models.Model):
 
     # Ver se o baba Está ativo
     is_active = models.BooleanField(default=False)
+
     def __str__(self):
         return f"{self.nome}"  # em {self.data.strftime('%d/%m/%Y %H:%M:%S')
 
@@ -40,6 +41,7 @@ class Jogador(models.Model):
     estrelas = models.FloatField(default=1)
     posicao = models.CharField(max_length=1, default=Posicao.LINHA)
     jogara = models.CharField(max_length=1, default=Posicao.LINHA)
+    jogos = models.IntegerField(default=0)
     is_admin = models.BooleanField(default=False)
 
     def __str__(self):
