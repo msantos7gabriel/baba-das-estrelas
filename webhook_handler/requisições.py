@@ -1,9 +1,11 @@
 import requests
+from os import environ
+
 
 # Envio das mensagens
 def requisicao_post(mensagem, grupo_id):
     # Prepara a URL e a Autenticação
-    url_api = "http://localhost:8080/message/sendText/baba%20das%20estrelas"
+    url_api = f"http://localhost:8080/message/sendText/{environ.get('INSTANCE_NAME')}"
     headers = {
         "apikey": "429683C4C977415CAAFCCE10F7D57E11",
         "Content-Type": "application/json"

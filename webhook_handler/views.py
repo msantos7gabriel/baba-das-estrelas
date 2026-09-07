@@ -165,7 +165,8 @@ def lista(grupo_id):
         texto_resposta = "A lista do baba está vazia."
     else:
         texto_resposta = (
-            f"Lista do {baba_atual.nome} ás {baba_atual.hora_inicio.strftime('%H:%M')} de {baba_atual.dia.strftime('%A').title()}:\n")  # type: ignore
+            # type: ignore
+            f"Lista do {baba_atual.nome} ás {baba_atual.hora_inicio.strftime('%H:%M')} de {baba_atual.dia.strftime('%A').title()}:\n")
         texto_resposta += f"\nJogadores:\n"
         for i in range(len(linha)):
             texto_resposta += f"{i+1}. {linha[i].nome}\n"
@@ -332,6 +333,7 @@ def passarin(grupo_id):
 def andrey(grupo_id):
     return requisicao_post('*Andrey* melhor chupetinha da Bahia 😋😋🤤🤤', grupo_id)
 
+
 def lucas(grupo_id):
     return requisicao_post('Rodelinha🍩 de *OURO* 🤤', grupo_id)
 
@@ -419,8 +421,9 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
 
 
 # Grupos permitidos
-allowed_groups = ['120363429280772424@g.us',
-                  '120363412694811478@g.us', '120363214522520270@g.us']
+# allowed_groups = ['120363429280772424@g.us',
+#                   '120363412694811478@g.us', '120363214522520270@g.us']
+allowed_groups = ['120363412694811478@g.us',]
 
 
 @csrf_exempt
