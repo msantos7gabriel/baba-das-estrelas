@@ -4,7 +4,7 @@ from os import environ
 from datetime import datetime, timedelta
 
 # Importações Django
-from .requisições import requisicao_post
+from .requisições import requisicao_post, requisicao_post_audio
 from django.http import JsonResponse
 from django.core.cache import cache
 import locale
@@ -378,6 +378,7 @@ def hugo(grupo_id):
 
 
 def passarin(grupo_id):
+    requisicao_post_audio('passarin.mp3', grupo_id)
     return requisicao_post('AAAAAAAAA LULA MEU PRESIDENTE ☭☭☭', grupo_id)
 
 
