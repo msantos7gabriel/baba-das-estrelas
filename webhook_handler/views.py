@@ -163,7 +163,7 @@ def cadastrar(id_whatsapp, nome=None, grupo_id=None):
         return requisicao_post(texto_resposta, grupo_id)
 
 
-# Funcionários
+# Funcionalidades
 def estrelas(jogador_estrelas):
     if jogador_estrelas < 6:
         estrelas = f"{int(jogador_estrelas)*'⭐'}"
@@ -267,6 +267,7 @@ def salvar_jogador(jogador, baba, posicao, grupo_id):
     return lista(grupo_id)
 
 
+# Funções para entrar no baba
 @cadastro_required
 def participar(id_whatsapp, mensagem=None, grupo_id=None):
     # Implementar lógica para escolher se quer ser goleirou ou linha
@@ -274,7 +275,7 @@ def participar(id_whatsapp, mensagem=None, grupo_id=None):
         jogador = Jogador.objects.get(id_whatsapp=id_whatsapp)
         # Verifica se o jogador está associado a um Baba existente
         if jogador.baba is not None:
-            texto_resposta = f"Você já está cadastrado e associado ao baba '{jogador.baba.nome}'."
+            texto_resposta = f"Já está cadastrado e associado a um baba '{jogador.baba.nome}'."
             return requisicao_post(texto_resposta, grupo_id)
         else:
             raise Baba.DoesNotExist  # Força a criação de um novo Baba para o jogador
@@ -321,11 +322,52 @@ def sair(id_whatsapp, grupo_id):
     if jogador.baba is not None:
         jogador.baba = None
         jogador.save()
-        texto_resposta = f"Você saiu da lista do baba."
+        texto_resposta = f"O Jogador {jogador.nome} saiu da lista do baba."
         return requisicao_post(texto_resposta, grupo_id)
     else:
-        texto_resposta = f"Você não está associado a nenhum baba."
+        texto_resposta = f"Não está associado a nenhum baba."
         return requisicao_post(texto_resposta, grupo_id)
+
+
+@cadastro_required
+def adicionar(id_whatsapp,  mensagem=None, grupo_id=None):
+    if mensagem != None and mensagem != '':
+        mensagem_nova = mensagem.replace('@', '').split()
+        print(mensagem_nova)
+        try:
+            Jogador.objects.get(id_whatsapp=mensagem_nova[1])
+            participar(id_whatsapp=mensagem_nova[1], grupo_id=grupo_id)
+            return
+        except Jogador.DoesNotExist:
+            texto_resposta = "O Jogador da sua busca não foi encontrado"
+            return requisicao_post(texto_resposta, grupo_id)
+
+        except Exception as e:
+            print(f"Error: {e}")
+    else:
+        texto_resposta = 'Você não marcou ninguem para adicionar no *BABA*\nPara adicionar alguem use o comando e marque alguem cadastrado.'
+    return requisicao_post(texto_resposta, grupo_id)
+
+
+@admin_required
+@cadastro_required
+def remover(id_whatsapp,  mensagem=None, grupo_id=None):
+    if mensagem != None and mensagem != '':
+        mensagem_nova = mensagem.replace('@', '').split()
+        print(mensagem_nova)
+        try:
+            Jogador.objects.get(id_whatsapp=mensagem_nova[1])
+            sair(id_whatsapp=mensagem_nova[1], grupo_id=grupo_id)
+            return
+        except Jogador.DoesNotExist:
+            texto_resposta = "O Jogador da sua busca não foi encontrado"
+            return requisicao_post(texto_resposta, grupo_id)
+
+        except Exception as e:
+            print(f"Error: {e}")
+    else:
+        texto_resposta = 'Você não marcou ninguem para adicionar no *BABA*\nPara adicionar alguem use o comando e marque alguem cadastrado.'
+    return requisicao_post(texto_resposta, grupo_id)
 
 
 # Cancelar comandos de multiplas etapas
@@ -399,7 +441,7 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
 
     # Comandos validos que o bot pode responder
     commandos_validos = ['!liberar', '!liberar-lista', '!abrir', '!fechar', '!fecha-lista',
-                         '!ping', '!info', '!ajuda', '!menu', '!perfil', '!rank', '!lista', '!participar', '!entrar', '!sair',
+                         '!ping', '!info', '!ajuda', '!menu', '!perfil', '!rank', '!lista', '!participar', '!entrar', '!sair', '!adicionar', '!add', '!remover', '!rem'
                          '!cadastrar', '!cadastro', '!cancelar',
                          '!entrar-em-biel', '!sadu-ou-don', '!luklima', '!thiago', '!rato', '!hugo', '!passaro', '!andrey', '!don', '!sadu', '!lucas']
 
@@ -431,6 +473,10 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
             sair(id_whatsapp, grupo_id)
         elif mensagem_formatada == '!cadastrar' or mensagem_formatada == '!cadastro':
             cadastrar(id_whatsapp, grupo_id=grupo_id)
+        elif mensagem_formatada == '!adicionar' or mensagem_formatada == '!add':
+            adicionar(id_whatsapp, grupo_id=grupo_id)
+        elif mensagem_formatada == '!remover' or mensagem_formatada == '!rem':
+            remover(id_whatsapp, grupo_id=grupo_id)
         elif mensagem_formatada == '!rank':
             rank(grupo_id)
         elif mensagem_formatada == '!cancelar':
@@ -467,6 +513,14 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
         if '!perfil' in mensagem_formatada:
             perfil(id_whatsapp, grupo_id=grupo_id,
                    mensagem=mensagem_formatada)
+            return
+        if '!adicionar' in mensagem_formatada or '!add' in mensagem_formatada:
+            adicionar(id_whatsapp, grupo_id=grupo_id,
+                      mensagem=mensagem_formatada)
+            return
+        if '!remover' in mensagem_formatada or '!rem' in mensagem_formatada:
+            remover(id_whatsapp, grupo_id=grupo_id,
+                    mensagem=mensagem_formatada)
             return
 
         # Comandos que não exitem
