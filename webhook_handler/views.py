@@ -28,7 +28,6 @@ except locale.Error:
 
 
 # Funcionalidade para o adm poder soltar a lista
-@cadastro_required
 @admin_required
 def liberarLista(id_whatsapp, mensagem='', grupo_id=None):
     if Baba.objects.filter(is_active=True).count() > 0:
@@ -231,6 +230,7 @@ def lista(grupo_id):
     return requisicao_post(texto_resposta, grupo_id)
 
 
+# Funções para entrar no baba
 def salvar_jogador(jogador, baba, posicao, grupo_id):
     """Função para adicionar a posição ou de goleiro ou linha e um baba a um jogador
 
@@ -255,7 +255,8 @@ def salvar_jogador(jogador, baba, posicao, grupo_id):
             jogador.save()
         else:
             texto_resposta = 'O Baba ja atingiu seu limite de pessoas na linha'
-            return requisicao_post(texto_resposta, grupo_id)
+            requisicao_post(texto_resposta, grupo_id)
+            return
     else:
         if baba.limite_gol > qtd_jogadores_gol:
             jogador.baba = baba
@@ -263,16 +264,23 @@ def salvar_jogador(jogador, baba, posicao, grupo_id):
             jogador.save()
         else:
             texto_resposta = 'O Baba ja atingiu seu limite de pessoas no gol'
-            return requisicao_post(texto_resposta, grupo_id)
+            requisicao_post(texto_resposta, grupo_id)
+            return
     return lista(grupo_id)
 
 
-# Funções para entrar no baba
+def lista_de_espera(jogador, grupo_id):
+    pass
+
+
 @cadastro_required
-def participar(id_whatsapp, mensagem=None, grupo_id=None):
-    # Implementar lógica para escolher se quer ser goleirou ou linha
+def participar(id_whatsapp, mensagem=None, adicionado=None, grupo_id=None,):
     try:
-        jogador = Jogador.objects.get(id_whatsapp=id_whatsapp)
+        # Verifica se o jogador é adcionado por outro
+        if adicionado == None:
+            jogador = Jogador.objects.get(id_whatsapp=id_whatsapp)
+        else:
+            jogador = adicionado
         # Verifica se o jogador está associado a um Baba existente
         if jogador.baba is not None:
             texto_resposta = f"Já está cadastrado e associado a um baba '{jogador.baba.nome}'."
@@ -292,7 +300,7 @@ def participar(id_whatsapp, mensagem=None, grupo_id=None):
         if jogador.posicao == 'A':
             # Verifica se ele esta em alguma etapa
             for etapa in etapas:
-                if etapa[0] == id_whatsapp and etapa[1] == "participar" and etapa[2] == 1:
+                if etapa[0] == id_whatsapp and etapa[1] == "participar" and etapa[3] == 1:
                     # Verifica se a mensa é válida (não nulo e não vazio) e se ele é sim ou não
                     if mensagem is None or mensagem.strip() == "" or mensagem.lower() not in ['g', 'l']:
                         texto_resposta = "Mensagem inválida. Por favor, tente novamente."
@@ -300,20 +308,40 @@ def participar(id_whatsapp, mensagem=None, grupo_id=None):
                     else:
                         if mensagem.lower() == 'g':
                             etapas.remove(etapa)
-                            return salvar_jogador(jogador, baba, 'G', grupo_id,)
+                            if adicionado == None:
+                                salvar_jogador(jogador, baba, 'G', grupo_id,)
+                            else:
+                                salvar_jogador(
+                                    adicionado,  baba, 'G', grupo_id,)
+                            return
                         else:
                             etapas.remove(etapa)
-                            return salvar_jogador(jogador, baba, 'L', grupo_id)
+                            if adicionado == None:
+                                salvar_jogador(jogador, baba, 'L', grupo_id,)
+                            else:
+                                salvar_jogador(
+                                    adicionado,  baba, 'L', grupo_id,)
+                            return
 
             # Caso o user não esteja em uma etapa
-            etapas.append((id_whatsapp, "participar", 1))
+            if adicionado != None:
+                etapas.append((id_whatsapp, "participar", jogador, 1))
+            else:
+                etapas.append((id_whatsapp, "participar", None, 1))
+
             texto_resposta = "Deseja Jogar no Gol ou na linha ? (G/L)"
             return requisicao_post(texto_resposta, grupo_id)
 
         elif jogador.posicao == 'G':
-            salvar_jogador(jogador, baba, jogador.posicao,  grupo_id,)
+            if adicionado == None:
+                salvar_jogador(jogador, baba, jogador.posicao,  grupo_id)
+            else:
+                salvar_jogador(adicionado, baba, jogador.posicao,  grupo_id)
         else:
-            salvar_jogador(jogador, baba, jogador.posicao,  grupo_id,)
+            if adicionado == None:
+                salvar_jogador(jogador, baba, jogador.posicao,  grupo_id)
+            else:
+                salvar_jogador(adicionado, baba, jogador.posicao,  grupo_id)
 
 
 @cadastro_required
@@ -333,24 +361,26 @@ def sair(id_whatsapp, grupo_id):
 def adicionar(id_whatsapp,  mensagem=None, grupo_id=None):
     if mensagem != None and mensagem != '':
         mensagem_nova = mensagem.replace('@', '').split()
-        print(mensagem_nova)
         try:
-            Jogador.objects.get(id_whatsapp=mensagem_nova[1])
-            participar(id_whatsapp=mensagem_nova[1], grupo_id=grupo_id)
+            jogador_adicionado = Jogador.objects.get(
+                id_whatsapp=mensagem_nova[1])
+            participar(id_whatsapp=id_whatsapp, grupo_id=grupo_id,
+                       adicionado=jogador_adicionado)
             return
         except Jogador.DoesNotExist:
             texto_resposta = "O Jogador da sua busca não foi encontrado"
             return requisicao_post(texto_resposta, grupo_id)
 
         except Exception as e:
-            print(f"Error: {e}")
+            texto_resposta = f"Erro Inesperado na função adicionar: {e}"
+            print(texto_resposta)
+            return requisicao_post(texto_resposta, grupo_id)
     else:
         texto_resposta = 'Você não marcou ninguem para adicionar no *BABA*\nPara adicionar alguem use o comando e marque alguem cadastrado.'
-    return requisicao_post(texto_resposta, grupo_id)
+        return requisicao_post(texto_resposta, grupo_id)
 
 
 @admin_required
-@cadastro_required
 def remover(id_whatsapp,  mensagem=None, grupo_id=None):
     if mensagem != None and mensagem != '':
         mensagem_nova = mensagem.replace('@', '').split()
@@ -505,7 +535,8 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
             if etapa[0] == id_whatsapp and etapa[1] == "cadastrar":
                 cadastrar(id_whatsapp, nome=mensagem, grupo_id=grupo_id)
             elif etapa[0] == id_whatsapp and etapa[1] == "participar":
-                participar(id_whatsapp, mensagem, grupo_id)
+                participar(id_whatsapp, mensagem=mensagem,
+                           adicionado=etapa[2], grupo_id=grupo_id)
             elif etapa[0] == id_whatsapp and etapa[1] == "liberarlista":
                 liberarLista(id_whatsapp, mensagem, grupo_id)
 

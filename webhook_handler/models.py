@@ -1,6 +1,8 @@
 from datetime import time
 from django.utils import timezone
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class Baba(models.Model):
@@ -36,8 +38,10 @@ class Jogador(models.Model):
 
     nome = models.CharField(max_length=100)
     id_whatsapp = models.CharField(max_length=20)
-    baba = models.ForeignKey(Baba, on_delete=models.CASCADE,
+    baba = models.ForeignKey(Baba, on_delete=models.SET_NULL,
                              related_name='jogadores', null=True, blank=True)
+    lista_de_espera = models.ForeignKey('ListaDeEspera', on_delete=models.SET_NULL,
+                                        related_name='jogadores_na_espera', null=True, blank=True)
     estrelas = models.FloatField(default=1)
     posicao = models.CharField(max_length=1, default=Posicao.LINHA)
     jogara = models.CharField(max_length=1, default=Posicao.LINHA)
@@ -58,3 +62,17 @@ class Jogador(models.Model):
     class Meta:
         verbose_name = "Jogador"
         verbose_name_plural = "Jogadores"
+
+
+# class convidado(models.Model):
+#     nome = models.CharField(max_length=100)
+
+class ListaDeEspera(models.Model):
+    fk_baba = models.OneToOneField(
+        Baba, on_delete=models.CASCADE, related_name="baba")
+
+
+@receiver(post_save, sender=Baba)
+def criar_lista_de_espera(sender, instance, created, **kwargs):
+    if created:  # Se o Baba acabou de ser criado (e não apenas editado)
+        ListaDeEspera.objects.create(baba=instance)
