@@ -36,12 +36,11 @@ def cadastro_required(func):
 
         try:
             Jogador.objects.get(id_whatsapp=id_whatsapp)
-            return func(*args, **kwargs)
         except Jogador.DoesNotExist:
             return requisicao_post(
                 'Você não está cadastrado. Use o comando !cadastrar para se cadastrar', grupo_id)
         except Exception as e:
             print(f'error no decorador cadastro_required: {e}')
             return
-
+        return func(*args, **kwargs)
     return wrapper
