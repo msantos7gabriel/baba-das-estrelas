@@ -71,3 +71,42 @@ def requisicao_post_audio(media_name, grupo_id):
                 f"Falha ao enviar a resposta. Status code: {resposta.status_code}, Resposta: {resposta.text}")
     except Exception as e:
         print(f"\nErro ao tentar enviar a resposta: {e}")
+
+
+def requisicao_delete_mensagem(
+    grupo_id, mensagem_id, from_me=False, participante_id=None
+):
+    url_api = (
+        f"http://localhost:8080/chat/deleteMessageForEveryone/"
+        f"{environ.get('INSTANCE_NAME')}"
+    )
+    headers = {
+        "apikey": str(environ.get("AUTHENTICATION_API_KEY")),
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "id": mensagem_id,
+        "remoteJid": grupo_id,
+        "fromMe": from_me
+    }
+    if not from_me:
+        if not participante_id:
+            print(
+                "Falha ao apagar mensagem de terceiro: "
+                "'participante_id' não fornecido."
+            )
+            return None
+        payload["participant"] = participante_id
+
+    try:
+        resposta = requests.delete(url_api, json=payload, headers=headers)
+        if resposta.status_code in (200, 201, 204):
+            print("Mensagem apagada com sucesso!")
+        else:
+            print(
+                f"Falha ao apagar a mensagem. Status code: "
+                f"{resposta.status_code}, Resposta: {resposta.text}"
+            )
+        return resposta
+    except requests.RequestException as e:
+        print(f"Erro ao tentar apagar a mensagem: {e}")

@@ -64,8 +64,14 @@ class Jogador(models.Model):
         verbose_name_plural = "Jogadores"
 
 
-# class convidado(models.Model):
-#     nome = models.CharField(max_length=100)
+class Convidado(models.Model):
+    nome = models.CharField(max_length=100)
+    convidado = models.ForeignKey(
+        Jogador, on_delete=models.CASCADE, related_name="convidado_por")
+
+    def __str__(self):
+        return f"{self.nome} Convidado por: ({self.convidado})"
+
 
 class ListaDeEspera(models.Model):
     fk_baba = models.OneToOneField(
