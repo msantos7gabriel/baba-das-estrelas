@@ -4,13 +4,20 @@ from os import environ
 from datetime import datetime, timedelta
 
 # Importações Django
-from .requisições import requisicao_post, requisicao_post_audio
+from .requisições import (
+    requisicao_delete_mensagem,
+    requisicao_post,
+    requisicao_post_audio,
+)
 from django.http import JsonResponse
 from django.core.cache import cache
 import locale
+from .eleicao import padrao_eleicao
+
 # Decoradores
 from django.views.decorators.csrf import csrf_exempt
 from .decorators import admin_required, cadastro_required
+
 # Modelos
 from .models import Jogador, Baba
 
@@ -450,8 +457,9 @@ def hugo(grupo_id):
 
 
 def passarin(grupo_id):
-    requisicao_post_audio('passarin.mp3', grupo_id)
-    return requisicao_post('AAAAAAAAA LULA MEU PRESIDENTE ☭☭☭', grupo_id)
+    # requisicao_post_audio('passarin.mp3', grupo_id)
+    # return requisicao_post('AAAAAAAAA LULA MEU PRESIDENTE ☭☭☭', grupo_id)
+    return requisicao_post('Proibido pelo ministro eleitoal do baba', grupo_id)
 
 
 def andrey(grupo_id):
@@ -462,7 +470,15 @@ def lucas(grupo_id):
     return requisicao_post('Rodelinha🍩 de *OURO* 🤤', grupo_id)
 
 
-def comandos(nome, mensagem, id_whatsapp, grupo_id):
+def comandos(
+    nome,
+    mensagem,
+    id_whatsapp,
+    grupo_id,
+    mensagem_id=None,
+    from_me=False,
+    participante_id=None,
+):
     if cache.get(id_whatsapp):
         print(f"{nome} em cooldown")
         return
@@ -477,6 +493,14 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
 
     # Formatação da mensagem para evitar problemas com maiúsculas/minúsculas e espaços
     mensagem_formatada = mensagem.lower().strip()
+
+    if padrao_eleicao.search(mensagem_formatada):
+        if mensagem_id:
+            return requisicao_delete_mensagem(
+                grupo_id, mensagem_id, from_me, participante_id
+            )
+        print("Não foi possível apagar a mensagem: ID da mensagem ausente.")
+        return
 
     # Comandos basicos
     if mensagem_formatada in commandos_validos:
@@ -562,7 +586,7 @@ def comandos(nome, mensagem, id_whatsapp, grupo_id):
 # Grupos permitidos
 # allowed_groups = ['120363429280772424@g.us',
 #                   '120363412694811478@g.us', '120363214522520270@g.us']
-allowed_groups = ['120363412694811478@g.us',]
+allowed_groups = ['120363412694811478@g.us', '120363214522520270@g.us']
 
 
 @csrf_exempt
@@ -591,7 +615,16 @@ def webhook_evolution(request):
             time_delta = datetime.now() - date_time
 
             # Se for uma mensagem nova chegando, se esta dento dos grupos permitidos, e se é uma mensagem de texto e se foi enviada a menos de 1 minuto atrás
-            if evento == 'messages.upsert' and grupo in allowed_groups and tipo_mensagem == 'conversation' and timedelta(minutes=1) > time_delta:
+            mensagem_textual = tipo_mensagem in (
+                'conversation',
+                'extendedTextMessage',
+            )
+            if (
+                evento == 'messages.upsert'
+                and grupo in allowed_groups
+                and mensagem_textual
+                and timedelta(minutes=1) > time_delta
+            ):
                 print("Mensagem atingiu os requisitos")
 
                 # if fromMe:
@@ -605,11 +638,25 @@ def webhook_evolution(request):
                 mensagem = dados.get('message', {}).get('conversation') or dados.get(
                     'message', {}).get('extendedTextMessage', {}).get('text')
 
-                # id whatsapp
-                id_whatsapp = str(chaves.get('participant')).split('@')[0]
+                # em grupos, o remetente pode ser o participante ou a própria conta do bot.
+                # Para mensagens de participantes, o valor vem em key.participant; em
+                # mensagens do próprio bot, isso pode estar ausente, então usamos um fallback.
+                id_whatsapp = str(
+                    chaves.get('participant')
+                    or chaves.get('remoteJid')
+                    or dados.get('sender')
+                    or ''
+                ).split('@')[0]
 
-                comandos(nome, mensagem,
-                         id_whatsapp, grupo)
+                comandos(
+                    nome,
+                    mensagem,
+                    id_whatsapp,
+                    grupo,
+                    mensagem_id=chaves.get('id') or dados.get('id'),
+                    from_me=bool(chaves.get('fromMe', False)),
+                    participante_id=chaves.get('participant'),
+                )
 
             else:
                 print("Mensagem Não atingiu os requisitos")
