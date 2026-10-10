@@ -459,7 +459,7 @@ def hugo(grupo_id):
 def passarin(grupo_id):
     # requisicao_post_audio('passarin.mp3', grupo_id)
     # return requisicao_post('AAAAAAAAA LULA MEU PRESIDENTE ☭☭☭', grupo_id)
-    return requisicao_post('Proibido pelo ministro eleitoal do baba', grupo_id)
+    return requisicao_post('𝘊𝘰𝘮𝘦𝘯𝘵á𝘳𝘪𝘰 𝘳𝘦𝘮𝘰𝘷𝘪𝘥𝘰 𝘱𝘰𝘳 𝘥𝘦𝘵𝘦𝘳𝘮𝘪𝘯𝘢çã𝘰 𝘥𝘰 𝘔𝘪𝘯𝘪𝘴𝘵𝘳𝘰 𝘈𝘭𝘦𝘹𝘢𝘯𝘥𝘳𝘦 𝘥𝘦 𝘔𝘰𝘳𝘢𝘦𝘴', grupo_id)
 
 
 def andrey(grupo_id):
